@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lab03-hpa
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+  namespace: lab03-hpa
+spec:
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      containers:
+        - name: web
+          image: lab03-scaling:hpa-v1
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            periodSeconds: 2
+          resources:
+            requests:
+              cpu: 200m
+              memory: 32Mi
+            limits:
+              cpu: 500m
+              memory: 96Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web
+  namespace: lab03-hpa
+spec:
+  selector:
+    app: web
+  ports:
+    - port: 80
+      targetPort: 8000
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: client
+  namespace: lab03-hpa
+  labels:
+    app: client
+spec:
+  containers:
+    - name: client
+      image: lab03-scaling:hpa-v1
+      imagePullPolicy: Never
+      command: ["python", "-c", "import time; time.sleep(604800)"]
+      resources:
+        requests:
+          cpu: 50m
+          memory: 32Mi
+        limits:
+          cpu: 500m
+          memory: 128Mi
